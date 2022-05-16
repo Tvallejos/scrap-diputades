@@ -5,16 +5,25 @@ import json
 from os.path import exists
 import os
 import logging
+import settings 
 
-def cargar_diputados(filepath):
-    results = filepath.split('/')[0]
+
+def cargar_diputades(filepath):
+    scrap_diputades(filepath)
+    with open(filepath,'r', encoding='utf-8') as dip:
+        return json.load(dip)
+
+
+
+def scrap_diputades(filepath):
+    results = filepath.split('/')[1]
     dir_exists = exists(results)
     if dir_exists: 
-        log.info(f'filepath: {filepath} ya existia')
-        return True
+        logging.info(f'filepath: {filepath} ya existia')
+        return filepath
 
     datos = dict()
-    log.info('scrapeando diputades')
+    logging.info('scrapeando diputades')
     pure_html = urlopen('https://www.camara.cl/diputados/diputados.aspx')
     soup_html = BeautifulSoup(pure_html, 'html.parser')
 
@@ -23,7 +32,7 @@ def cargar_diputados(filepath):
     for diputado in diputados:
         datos_diputado = dict()
         name =  diputado.find('h4').find('a').string
-        log.debug(f'procesando diputade: {name}')
+        logging.debug(f'procesando diputade: {name}')
         distr_nd_party = diputado.find_all('p')
         for k in distr_nd_party:
             raw_data = k.string.split(':')
@@ -39,16 +48,14 @@ def cargar_diputados(filepath):
         datos.update({name: datos_diputado})
     
     os.makedirs(results)
-    log.info(f'creando directorio {results}')
+    logging.info(f'creando directorio {results}')
     with open(filepath, 'w', encoding='utf-8') as outfile:
-        log.info(f'volcando datos en {filepath}')
+        logging.info(f'volcando datos en {filepath}')
         json.dump(datos, outfile, indent=4, ensure_ascii=False)
 
-    return True
+    return filepath
 
 
 if __name__ == "__main__":
-    fmt = "[ %(funcName)0s() ] %(message)s"
-    logging.basicConfig(level=logging.INFO,format=fmt)
-    log = logging.getLogger()
-    cargar_diputados('results/diputados.json')
+    settings.init()
+    scrap_diputades('./results/diputades.json')

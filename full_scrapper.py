@@ -3,14 +3,19 @@ import simple_scrap
 from urllib.request import urlopen
 import urllib
 from bs4 import BeautifulSoup
+from load_party import cargar_diputades
 import json
 import os
-
+import settings
+import logging
+import re
+from typing import List
 
 def get_last_id():
+    logging.info(f'obteniendo ultima votacion')
+
     pure_html = urlopen("https://www.camara.cl/legislacion/sala_sesiones/votaciones.aspx")
     soup_html = BeautifulSoup(pure_html, 'html.parser')
-
 
     #opening the results table
     tbody = soup_html.find(id="ContentPlaceHolder1_ContentPlaceHolder1_PaginaContent_pnlVotaciones")
@@ -20,7 +25,22 @@ def get_last_id():
 
     return int(last_vot)
 
+def key_of_diputade(name : str, dips : List[str]) -> int: 
+    return next(filter( lambda d: re.search(name,d,re.I) , dips))
 
+def get_diputado_by_name(name : str):
+    dips = cargar_diputades('./results/diputades.json')
+    dip = key_of_diputade(name,dips.keys())
+    return dips[dip]
+
+def get_votaciones_by_name(name : str):
+    dip = get_diputado_by_name(name)
+    url = f'https://www.camara.cl/diputados/detalle/votaciones_sala.aspx?prmId={ dip["Pagina"] }#ficha-diputados'
+
+    # TODO SCRAP this url
+    
+    soup_html = BeautifulSoup(urlopen(url), 'html.parser')
+    return
 
 def full_scrap(start_id ,wanted_results, filepath, verbose):
     new_data = []
@@ -72,4 +92,6 @@ def full_scrap(start_id ,wanted_results, filepath, verbose):
 
     return True
 if __name__ == "__main__":
+    settings.init()
+    get_votaciones_by_name('carlos')
     full_scrap(get_last_id(), 10, "./results/data.json")

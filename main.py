@@ -3,9 +3,10 @@ import argparse
 import full_scrapper
 import sys
 import logging
+import settings
 
-fmt = "[ %(funcName)0s() ] %(message)s"
-logging.basicConfig(level=logging.INFO,format=fmt)
+settings.init()
+
 log = logging.getLogger()
 
 parser = argparse.ArgumentParser(description='Scraping de la camara de diputados de Chile')
@@ -18,7 +19,7 @@ parser.add_argument('-v', help='mostrar progreso', const=True, default=False, na
 args = parser.parse_args()
 
 if args.diputados:
-    load_party.cargar_diputados(f'{args.folder}/diputados.json')
+    load_party.cargar_diputades(f'{args.folder}/diputades.json')
 if args.id == 0:
     init_id = full_scrapper.get_last_id()
 else:
