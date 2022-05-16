@@ -2,6 +2,11 @@ import load_party
 import argparse
 import full_scrapper
 import sys
+import logging
+
+fmt = "[ %(funcName)0s() ] %(message)s"
+logging.basicConfig(level=logging.INFO,format=fmt)
+log = logging.getLogger()
 
 parser = argparse.ArgumentParser(description='Scraping de la camara de diputados de Chile')
 
@@ -20,5 +25,10 @@ else:
     init_id = args.id
 print()
 print("SCRAPPING IN PROGRESS  \n")
+
+log.info(f'init_id: {init_id}')
+log.info(f'args.proyectos: {args.proyectos}')
+log.info(f'args.folder: {args.folder}')
+log.info(f'args.v: {args.v}')
 
 full_scrapper.full_scrap(init_id, args.proyectos, f'{args.folder}/proyectos.json', args.v)
