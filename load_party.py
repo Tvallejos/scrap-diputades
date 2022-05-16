@@ -2,8 +2,11 @@ import sys
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import json
+from os.path import exists
 
 def cargar_diputados(filepath):
+    if exists(filepath) : return True
+
     datos = dict()
     pure_html = urlopen('https://www.camara.cl/diputados/diputados.aspx')
     soup_html = BeautifulSoup(pure_html, 'html.parser')
@@ -22,6 +25,9 @@ def cargar_diputados(filepath):
         mail = mail.get('href').replace('mailto:', '').replace('?subject=Consulta', '')
 
         datos_diputado.update({'Correo': mail})
+        pag = diputado.find('a')['href'].split('=')[1]
+        datos_diputado.update({'Pagina':pag})
+
         datos.update({name: datos_diputado})
 
     with open(filepath, 'w', encoding='utf-8') as outfile:
