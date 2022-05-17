@@ -9,7 +9,8 @@ import os
 import settings
 import logging
 import re
-from typing import List
+from typing import List, Dict
+from unidecode import unidecode
 
 def get_last_id():
     logging.info(f'obteniendo ultima votacion')
@@ -33,6 +34,44 @@ def get_diputado_by_name(name : str):
     dip = key_of_diputade(name,dips.keys())
     return dips[dip]
 
+def parse_boletin(bltn : str) -> str:
+    #Proyecto de Resolución N° 
+    #OTROS 
+    #Proyecto de Resolución N° 
+    #Boletín 12495-07 
+    return bltn
+
+def process_data_name(name : str) -> str:
+    return unidecode(name.lower().replace(":",""))
+
+def process_data(data : str) -> str:
+    return data.replace("  ","")
+
+def scrap_boletin(vote : Dict[str,str]):
+    url = f'https://www.camara.cl/legislacion/sala_sesiones/votacion_detalle.aspx?prmIdVotacion={vote["num"]}'
+    soup_html = BeautifulSoup(urlopen(url), 'html.parser')
+    
+    info = soup_html.find(id="info-ficha").find_all("div", {"class": "datos-ficha"})
+    totvote = soup_html.find("table").find_all('th')
+    numvote = soup_html.find("table").find('tr').find_all('td')
+    name = list(info[0].children)
+    vote['name'] = process_data(name[1].text + name[3].text)
+    
+    info=info[1:len(info)]
+    for datos_ficha in info:
+        df = list(datos_ficha.children)
+        dname = process_data_name(df[1].text)
+        ddata = process_data(df[3].text)
+        vote[dname] = ddata
+
+    gral= dict()
+    for i in range(len(totvote)):
+        gral[totvote[i].text.lower()] = process_data(numvote[i].text)
+
+    vote.update({"voto_general":gral})
+
+    return vote
+
 def get_votaciones_by_name(name : str):
     dip = get_diputado_by_name(name)
     url = f'https://www.camara.cl/diputados/detalle/votaciones_sala.aspx?prmId={ dip["Pagina"] }#ficha-diputados'
@@ -40,7 +79,18 @@ def get_votaciones_by_name(name : str):
     # TODO SCRAP this url
     
     soup_html = BeautifulSoup(urlopen(url), 'html.parser')
-    return
+    votaciones = soup_html.find_all("tr")
+    last_vote = votaciones[1].find_all('td')
+    vote = dict()
+    if len(last_vote) == 4:
+        vote.update({'boletin': parse_boletin(last_vote[0].text)})
+        fecha,sesion = last_vote[1].text.split('-')
+        vote.update({'fecha': fecha})
+        vote.update({'sesion': sesion})
+        vote.update({'voto': last_vote[2].text})
+        vote.update({'num': last_vote[3].find('a')['href'].split('=')[1]})
+        vote = scrap_boletin(vote)
+    return vote
 
 def full_scrap(start_id ,wanted_results, filepath, verbose):
     new_data = []
@@ -91,7 +141,10 @@ def full_scrap(start_id ,wanted_results, filepath, verbose):
         json.dump(old_data + new_data, outfile, indent=4, ensure_ascii=False)
 
     return True
+
 if __name__ == "__main__":
     settings.init()
-    get_votaciones_by_name('carlos')
-    full_scrap(get_last_id(), 10, "./results/data.json")
+    last_vote = get_votaciones_by_name('carlos')
+    print(last_vote)
+
+    #full_scrap(get_last_id(), 10, "./results/data.json")
