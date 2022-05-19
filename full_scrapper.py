@@ -52,7 +52,7 @@ def process_data(data : str) -> str:
 
 def scrap_boletin(vote : Dict[str,str]):
     url = f'https://www.camara.cl/legislacion/sala_sesiones/votacion_detalle.aspx?prmIdVotacion={vote["num_votacion"]}'
-    logging.info(f'url_boletin: {url}')
+    logging.info(f'url detalle votacion: {url}')
     soup_html = BeautifulSoup(urlopen(url), 'html.parser')
     
     info = soup_html.find(id="info-ficha").find_all("div", {"class": "datos-ficha"})
@@ -67,13 +67,13 @@ def scrap_boletin(vote : Dict[str,str]):
         df = list(datos_ficha.children)
         dname = process_data_name(df[1].text)
         ddata = process_data(df[3].text)
-        logging.info(f'dato-ficha: {dname} : {ddata}')
+        logging.debug(f'dato-ficha: {dname} : {ddata}')
         vote[dname] = ddata
 
     gral= dict()
     for i in range(len(totvote)):
         gral[unidecode(totvote[i].text.lower())] = process_data(numvote[i].text)
-    logging.info(f'votacion general: {gral}')
+    logging.debug(f'votacion general: {gral}')
     vote.update({"voto_general":gral})
 
     return vote
@@ -113,7 +113,7 @@ def get_votaciones_by_name(name : str):
         logging.debug(f'fecha: {fecha}\n sesion: {sesion}\nvoto: {vote["voto"]}\n num_votacion: {vote["num_votacion"]}')
         vote = scrap_boletin(vote)
     vs = string_of_vote_name(name, vote)
-    logging.info(f'vote string: {vs}')
+    logging.debug(f'vote string: {vs}')
     return vs
 
 def full_scrap(start_id ,wanted_results, filepath, verbose):
