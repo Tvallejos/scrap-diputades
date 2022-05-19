@@ -2,23 +2,19 @@ import sys
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import json
-from os.path import exists
+#from os.path import exists
 import os
 import logging
 import settings 
 
 
 def cargar_diputades(filepath):
-    scrap_diputades(filepath)
-    with open(filepath,'r', encoding='utf-8') as dip:
+    with open(scrap_diputades(filepath),'r', encoding='utf-8') as dip:
         return json.load(dip)
-
-
 
 def scrap_diputades(filepath):
     results = filepath.split('/')[1]
-    dir_exists = exists(results)
-    if dir_exists: 
+    if os.path.exists(results):
         logging.info(f'filepath: {filepath} ya existia')
         return filepath
 
@@ -36,14 +32,16 @@ def scrap_diputades(filepath):
         distr_nd_party = diputado.find_all('p')
         for k in distr_nd_party:
             raw_data = k.string.split(':')
-            datos_diputado.update({raw_data[0]:raw_data[1]})
+            datos_diputado[raw_data[0]] = raw_data[1]
         
-        mail = diputado.find('a', {'class':'contacto'})
-        mail = mail.get('href').replace('mailto:', '').replace('?subject=Consulta', '')
+        mail = diputado.find('a', {'class':'contacto'}) \
+            .get('href').replace('mailto:', '').replace('?subject=Consulta', '')
 
-        datos_diputado.update({'Correo': mail})
+        datos_diputado["correo"] = mail
+        logging.debug(f'correo: {mail}')
         pag = diputado.find('a')['href'].split('=')[1]
-        datos_diputado.update({'Pagina':pag})
+        datos_diputado["pagina"] = pag
+        logging.debug(f'id pagina: {pag}')
 
         datos.update({name: datos_diputado})
     
@@ -54,7 +52,6 @@ def scrap_diputades(filepath):
         json.dump(datos, outfile, indent=4, ensure_ascii=False)
 
     return filepath
-
 
 if __name__ == "__main__":
     settings.init()
