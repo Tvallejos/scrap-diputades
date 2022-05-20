@@ -1,5 +1,5 @@
 import sys
-import simple_scrap
+import simple_scrap 
 from urllib.request import urlopen
 import urllib
 from bs4 import BeautifulSoup
@@ -27,7 +27,10 @@ def get_last_id():
     return int(last_vot)
 
 def key_of_diputade(name : str, dips : List[str]) -> int: 
-    return next(filter( lambda d: re.search(name,d,re.I) , dips))
+    result = list(filter( lambda d: re.search(name,d,re.I) , dips))
+    #if len(result) == 0:
+    #    raise
+    return result[0]
 
 def get_diputado_by_name(name : str):
     dips = cargar_diputades('./results/diputades.json')
@@ -79,20 +82,25 @@ def scrap_boletin(vote : Dict[str,str]):
     return vote
 
 def string_of_vote_name(name : str, v : Dict):
-    vg = v['voto_general']
-    sv = f"""{name} votó {v['voto']}
-    en {v['name']} {v['sesion']}
-    materia: {v['materia']}
+    return string_of_vote_name_info(name, v)
+
+def string_of_vote_name_info(name : str, v : Dict, info : bool):
+    extra = f"""\ninformación extra:
     articulo: {v['articulo']}
     tramite: {v['tramite']}
     tipo de votacion: {v['tipo de votacion']}
-    quorum: {v['quorum']}
+    quorum: {v['quorum']}"""
+    vg = v['voto_general']
+    sv = f"""{name} votó {v['voto']}
+    en {v['name']} {v['sesion']}
     resultado: {v['resultado']}
+    materia: {v['materia']}
     votaciones: 
     a favor: {vg['a favor']} | en contra: {vg['en contra']} | abstencion: {vg['abstencion']} | dispensados: {vg['dispensados']}"""
+    if info: sv+=extra
     return sv
 
-def get_votaciones_by_name(name : str):
+def get_votaciones_by_name(name : str, info : bool = False):
     logging.info(f'scrapping votaciones by name: {name}')
     name,dip = get_diputado_by_name(name)
     url = f'https://www.camara.cl/diputados/detalle/votaciones_sala.aspx?prmId={ dip["pagina"] }#ficha-diputados'
@@ -112,11 +120,11 @@ def get_votaciones_by_name(name : str):
         
         logging.debug(f'fecha: {fecha}\n sesion: {sesion}\nvoto: {vote["voto"]}\n num_votacion: {vote["num_votacion"]}')
         vote = scrap_boletin(vote)
-    vs = string_of_vote_name(name, vote)
+    vs = string_of_vote_name_info(name, vote, info)
     logging.debug(f'vote string: {vs}')
     return vs
 
-def full_scrap(start_id ,wanted_results, filepath, verbose):
+def full_scrap(start_id ,wanted_results, filepath, verbose=False):
     new_data = []
     if verbose:
         toolbar_width = wanted_results
@@ -169,5 +177,6 @@ def full_scrap(start_id ,wanted_results, filepath, verbose):
 if __name__ == "__main__":
     settings.init()
     last_vote = get_votaciones_by_name('carlos')
+    #last_vote = get_votaciones_by_name('fail')
 
-    #full_scrap(get_last_id(), 10, "./results/data.json")
+    full_scrap(get_last_id(), 10, "./results/data.json",True)

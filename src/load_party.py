@@ -2,7 +2,6 @@ import sys
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import json
-#from os.path import exists
 import os
 import logging
 import settings 

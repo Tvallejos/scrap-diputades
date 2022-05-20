@@ -1,9 +1,9 @@
 import load_party
 import argparse
-import full_scrapper
+import full_scrapper 
 import sys
 import logging
-import settings
+import settings 
 
 settings.init()
 
