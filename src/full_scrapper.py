@@ -11,6 +11,9 @@ import logging
 import re
 from typing import List, Dict
 from unidecode import unidecode
+from functools import reduce
+
+from exceptions import DiputadeNotFound, MultiplesDiputadesFound
 
 def get_last_id():
     logging.info(f'obteniendo ultima votacion')
@@ -28,14 +31,22 @@ def get_last_id():
 
 def key_of_diputade(name : str, dips : List[str]) -> int: 
     result = list(filter( lambda d: re.search(name,d,re.I) , dips))
-    #if len(result) == 0:
-    #    raise
+    if len(result) == 0:
+        raise DiputadeNotFound(f'No se encontró a diputade {name}')
+    elif len(result) > 1:
+        names = reduce( lambda n,acc: f'{n} ,{acc}', result[1:], result[0])
+        #, result[0])
+        raise MultiplesDiputadesFound(f'Se encontraron múltiples diputades buscando por {name}: {names}', result)
+        
     return result[0]
 
 def get_diputado_by_name(name : str):
     dips = cargar_diputades('./results/diputades.json')
-    dip = key_of_diputade(name,dips.keys())
-    return dip,dips[dip]
+    try:
+        dip = key_of_diputade(name,dips.keys())
+        return dip,dips[dip]
+    except (DiputadeNotFound, MultiplesDiputadesFound) as exp:
+        raise exp
 
 def parse_boletin(bltn : str) -> str:
     #Proyecto de Resolución N° 
@@ -102,7 +113,11 @@ def string_of_vote_name_info(name : str, v : Dict, info : bool):
 
 def get_votaciones_by_name(name : str, info : bool = False):
     logging.info(f'scrapping votaciones by name: {name}')
-    name,dip = get_diputado_by_name(name)
+    try:
+         name,dip = get_diputado_by_name(name)
+    except (DiputadeNotFound,MultiplesDiputadesFound) as exp:
+        raise exp
+
     url = f'https://www.camara.cl/diputados/detalle/votaciones_sala.aspx?prmId={ dip["pagina"] }#ficha-diputados'
     logging.info(f'url boletin: {url}')
 
@@ -176,7 +191,10 @@ def full_scrap(start_id ,wanted_results, filepath, verbose=False):
 
 if __name__ == "__main__":
     settings.init()
-    last_vote = get_votaciones_by_name('carlos')
-    #last_vote = get_votaciones_by_name('fail')
+    try:
+        last_vote = get_votaciones_by_name('carlos')
+        last_vote = get_votaciones_by_name('fail')
+    except (DiputadeNotFound, MultiplesDiputadesFound) as exp:
+        print(exp)
 
-    full_scrap(get_last_id(), 10, "./results/data.json",True)
+    #full_scrap(get_last_id(), 10, "./results/data.json",True)
