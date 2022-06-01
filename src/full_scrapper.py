@@ -13,7 +13,8 @@ from typing import List, Dict
 from unidecode import unidecode
 from functools import reduce
 
-from exceptions import DiputadeNotFound, MultiplesDiputadesFound
+from exceptions import DiputadeNotFound, MultiplesDiputadesFound, \
+    VotacionesNotFound
 
 
 def get_last_id():
@@ -109,6 +110,8 @@ def scrap_boletin(vote: Dict[str, str]):
 
 def build_vote_from_url(url: str) -> Dict:
     votaciones = BeautifulSoup(urlopen(url), 'html.parser').find_all("tr")
+    if not votaciones:
+        raise VotacionesNotFound()
     last_vote = votaciones[1].find_all('td')
     vote = dict()
     if len(last_vote) == 4:
@@ -194,9 +197,10 @@ def full_scrap(start_id, wanted_results, filepath, verbose=False):
 if __name__ == "__main__":
     settings.init()
     try:
+        last_vote = get_votaciones_by_name('rojas')
         last_vote = get_votaciones_by_name('carlos')
         last_vote = get_votaciones_by_name('fail')
-    except (DiputadeNotFound, MultiplesDiputadesFound) as exp:
+    except (DiputadeNotFound, MultiplesDiputadesFound, VotacionesNotFound) as exp:
         print(exp)
 
     # full_scrap(get_last_id(), 10, "./results/data.json",True)
